@@ -1,0 +1,5 @@
+{
+  "name": "JatiyaTyper - Adaptive Bengali Typing Tutor",
+  "description": "An adaptive typing tutor for the Bengali National (Jatiya) keyboard layout. It identifies a user's weakest characters and dynamically generates targeted practice sessions to build muscle memory efficiently. User progress is persistent, with new keys being 'unlocked' only after mastery of the current set is demonstrated.",
+  "requestFramePermissions": []
+}
