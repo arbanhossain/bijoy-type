@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserProgress, KeyMap, CharacterStats } from '../types';
-import { PROFICIENCY_THRESHOLD } from '../constants';
+import * as ProgressService from '../services/progressService';
 
 interface ProfilePageProps {
   userProgress: UserProgress;
@@ -9,12 +9,14 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ userProgress, keymap, onBackToLobby }) => {
+  const proficiencyThreshold = ProgressService.loadProficiencyThreshold();
+
   const calculateOverallProficiency = () => {
     const allStats = Object.values(userProgress.proficiencyStats);
     const practicedStats = allStats.filter((stats: CharacterStats) => stats.attempts > 0);
 
     const totalProficiencies = practicedStats.reduce((sum: number, stats: CharacterStats) => sum + stats.proficiency, 0);
-    const masteredChars = practicedStats.filter((stats: CharacterStats) => stats.proficiency >= PROFICIENCY_THRESHOLD).length;
+    const masteredChars = practicedStats.filter((stats: CharacterStats) => stats.proficiency >= proficiencyThreshold).length;
     const totalPracticed = practicedStats.length;
 
     return {

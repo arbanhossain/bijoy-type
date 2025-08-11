@@ -4,6 +4,10 @@ import { keymap, unlockOrder, INITIAL_UNLOCKED_KEYS_COUNT } from '../constants';
 
 const PROGRESS_KEY = 'jatiyaTyper_progress';
 const VOCABULARY_KEY = 'jatiyaTyper_vocabulary';
+const PROFICIENCY_THRESHOLD_KEY = 'jatiyaTyper_proficiency_threshold';
+const DEFAULT_PROFICIENCY_THRESHOLD = 0.9;
+const USE_ALL_UNLOCKED_KEYS_KEY = 'jatiyaTyper_use_all_unlocked_keys';
+const DEFAULT_USE_ALL_UNLOCKED_KEYS = false;
 
 const createInitialProficiencyStats = (): ProficiencyStats => {
   const stats: ProficiencyStats = {};
@@ -40,6 +44,28 @@ export const saveProgress = (progress: UserProgress): void => {
     localStorage.setItem(PROGRESS_KEY, serializedState);
   } catch (error) {
     console.error("Could not save progress", error);
+  }
+};
+
+export const saveProficiencyThreshold = (threshold: number): void => {
+  try {
+    localStorage.setItem(PROFICIENCY_THRESHOLD_KEY, threshold.toFixed(2)); // Save as string with 2 decimal places
+  } catch (error) {
+    console.error("Could not save proficiency threshold", error);
+  }
+};
+
+export const loadProficiencyThreshold = (): number => {
+  try {
+    const serializedThreshold = localStorage.getItem(PROFICIENCY_THRESHOLD_KEY);
+    if (serializedThreshold === null) {
+      saveProficiencyThreshold(DEFAULT_PROFICIENCY_THRESHOLD);
+      return DEFAULT_PROFICIENCY_THRESHOLD;
+    }
+    return parseFloat(serializedThreshold);
+  } catch (error) {
+    console.error("Could not load proficiency threshold", error);
+    return DEFAULT_PROFICIENCY_THRESHOLD;
   }
 };
 
@@ -87,5 +113,27 @@ export const loadVocabulary = (): string[] | null => {
   } catch (error) {
     console.error("Could not load vocabulary", error);
     return null;
+  }
+};
+
+export const saveUseAllUnlockedKeys = (useAll: boolean): void => {
+  try {
+    localStorage.setItem(USE_ALL_UNLOCKED_KEYS_KEY, JSON.stringify(useAll));
+  } catch (error) {
+    console.error("Could not save use all unlocked keys setting", error);
+  }
+};
+
+export const loadUseAllUnlockedKeys = (): boolean => {
+  try {
+    const serializedSetting = localStorage.getItem(USE_ALL_UNLOCKED_KEYS_KEY);
+    if (serializedSetting === null) {
+      saveUseAllUnlockedKeys(DEFAULT_USE_ALL_UNLOCKED_KEYS);
+      return DEFAULT_USE_ALL_UNLOCKED_KEYS;
+    }
+    return JSON.parse(serializedSetting);
+  } catch (error) {
+    console.error("Could not load use all unlocked keys setting", error);
+    return DEFAULT_USE_ALL_UNLOCKED_KEYS;
   }
 };

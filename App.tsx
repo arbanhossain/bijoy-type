@@ -6,8 +6,9 @@ import * as LessonService from './services/lessonService';
 import TypingArea from './components/TypingArea';
 import Keyboard from './components/Keyboard';
 import Controls from './components/Controls';
-import { keymap, unlockOrder, PROFICIENCY_THRESHOLD } from './constants';
+import { keymap, unlockOrder } from './constants';
 import ProfilePage from './components/ProfilePage';
+import SettingsPage from './components/SettingsPage';
 
 const App: React.FC = () => {
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
@@ -16,6 +17,9 @@ const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.LOBBY);
   const [lastUnlocked, setLastUnlocked] = useState<string | null>(null);
   const [liveStats, setLiveStats] = useState({ wpm: 0, accuracy: 100 });
+  const [proficiencyThreshold, setProficiencyThreshold] = useState(0.9); // Default value from constants
+  const [useAllUnlockedKeys, setUseAllUnlockedKeys] = useState(false);
+  const [hasStartedTyping, setHasStartedTyping] = useState(false); // New state for typing status
 
   const handleViewProfile = () => {
     setGameState(GameState.PROFILE);
@@ -25,12 +29,19 @@ const App: React.FC = () => {
     setGameState(GameState.LOBBY);
   };
 
+  const handleViewSettings = () => {
+    setGameState(GameState.SETTINGS);
+  };
+
   useEffect(() => {
-    setUserProgress(ProgressService.loadProgress());
+    const loadedProgress = ProgressService.loadProgress();
+    setUserProgress(loadedProgress);
     const vocab = ProgressService.loadVocabulary();
     if (vocab) {
       setMasterVocabulary(vocab);
     }
+    setProficiencyThreshold(ProgressService.loadProficiencyThreshold());
+    setUseAllUnlockedKeys(ProgressService.loadUseAllUnlockedKeys());
   }, []);
 
   const handleVocabUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,6 +72,12 @@ const App: React.FC = () => {
     setLessonText(text);
     setGameState(GameState.TYPING);
     setLastUnlocked(null);
+    setHasStartedTyping(true); // Set to true when lesson starts
+  };
+
+  const resetLesson = () => {
+    setGameState(GameState.LOBBY);
+    setHasStartedTyping(false); // Reset typing status
   };
   
   const recalculateProficiency = useCallback((progress: UserProgress, lessonStats: { [char: string]: Omit<CharacterStats, 'proficiency'> }): UserProgress => {
@@ -89,7 +106,7 @@ const App: React.FC = () => {
       return newProgress;
   }, []);
 
-  const checkForUnlocks = useCallback((progress: UserProgress): UserProgress => {
+  const checkForUnlocks = useCallback((progress: UserProgress, currentProficiencyThreshold: number): UserProgress => {
       const newProgress = JSON.parse(JSON.stringify(progress));
       const lastUnlockedKey = newProgress.unlockedKeys[newProgress.unlockedKeys.length - 1];
       const keyDef = keymap[lastUnlockedKey];
@@ -98,7 +115,7 @@ const App: React.FC = () => {
       const charsToMaster = [keyDef.normal];
       if(keyDef.shift) charsToMaster.push(keyDef.shift);
 
-      const allMastered = charsToMaster.every(c => (newProgress.proficiencyStats[c]?.proficiency || 0) >= PROFICIENCY_THRESHOLD);
+      const allMastered = charsToMaster.every(c => (newProgress.proficiencyStats[c]?.proficiency || 0) >= currentProficiencyThreshold);
 
       if (allMastered) {
           const nextKeyIndex = unlockOrder.findIndex(k => k === lastUnlockedKey) + 1;
@@ -118,12 +135,36 @@ const App: React.FC = () => {
     if (!userProgress) return;
 
     let updatedProgress = recalculateProficiency(userProgress, lessonStats);
-    updatedProgress = checkForUnlocks(updatedProgress);
+    updatedProgress = checkForUnlocks(updatedProgress, proficiencyThreshold);
 
     ProgressService.saveProgress(updatedProgress);
     setUserProgress(updatedProgress);
     setGameState(GameState.FINISHED);
-  }, [userProgress, recalculateProficiency, checkForUnlocks]);
+    setHasStartedTyping(false); // Set to false when lesson completes
+  }, [userProgress, recalculateProficiency, checkForUnlocks, proficiencyThreshold]);
+
+  const handleUpdateProficiencyThreshold = useCallback((threshold: number) => {
+    const newThreshold = threshold / 100; // Convert 0-100 to 0-1
+    setProficiencyThreshold(newThreshold);
+    ProgressService.saveProficiencyThreshold(newThreshold);
+  }, []);
+
+  const handleToggleKeyLock = useCallback((key: string) => {
+    if (!userProgress) return;
+
+    const newUnlockedKeys = userProgress.unlockedKeys.includes(key)
+      ? userProgress.unlockedKeys.filter(k => k !== key)
+      : [...userProgress.unlockedKeys, key].sort((a, b) => unlockOrder.indexOf(a) - unlockOrder.indexOf(b)); // Maintain order
+
+    const updatedProgress = { ...userProgress, unlockedKeys: newUnlockedKeys };
+    ProgressService.saveProgress(updatedProgress);
+    setUserProgress(updatedProgress);
+  }, [userProgress]);
+
+  const handleToggleUseAllUnlockedKeys = useCallback((useAll: boolean) => {
+    setUseAllUnlockedKeys(useAll);
+    ProgressService.saveUseAllUnlockedKeys(useAll);
+  }, []);
 
   if (!userProgress) {
     return <div className="flex items-center justify-center min-h-screen">লোড হচ্ছে...</div>;
@@ -153,12 +194,22 @@ const App: React.FC = () => {
                 </button>
               </>
             )}
-            <button
-              onClick={handleViewProfile}
-              className="mt-4 px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75 transition-colors duration-200"
-            >
-              প্রোফাইল দেখুন
-            </button>
+            {!hasStartedTyping && ( // Conditionally render based on hasStartedTyping
+              <>
+                <button
+                  onClick={handleViewProfile}
+                  className="mt-4 px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75 transition-colors duration-200"
+                >
+                  প্রোফাইল দেখুন
+                </button>
+                <button
+                  onClick={handleViewSettings}
+                  className="mt-4 ml-4 px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 transition-colors duration-200"
+                >
+                  সেটিংস
+                </button>
+              </>
+            )}
           </div>
         )}
         
@@ -175,6 +226,12 @@ const App: React.FC = () => {
                 </div>
             </div>
             <TypingArea lessonText={lessonText} onLessonComplete={handleLessonComplete} setLiveStats={setLiveStats} />
+            <button
+              onClick={resetLesson}
+              className="mt-4 px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75 transition-colors duration-200"
+            >
+              পাঠ রিসেট করুন
+            </button>
            </div>
         )}
 
@@ -189,15 +246,32 @@ const App: React.FC = () => {
             <button
               onClick={startLesson}
               className="mt-4 px-8 py-3 bg-emerald-600 text-white font-bold rounded-lg shadow-lg hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-75 transition-transform transform hover:scale-105"
+              autoFocus // Add autoFocus here
             >
               পরবর্তী পাঠ
             </button>
             <button
-              onClick={handleViewProfile}
-              className="mt-4 ml-4 px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75 transition-colors duration-200"
+              onClick={resetLesson}
+              className="mt-4 ml-4 px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75 transition-colors duration-200"
             >
-              প্রোফাইল দেখুন
+              পাঠ রিসেট করুন
             </button>
+            {!hasStartedTyping && ( // Conditionally render based on hasStartedTyping
+              <>
+                <button
+                  onClick={handleViewProfile}
+                  className="mt-4 ml-4 px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75 transition-colors duration-200"
+                >
+                  প্রোফাইল দেখুন
+                </button>
+                <button
+                  onClick={handleViewSettings}
+                  className="mt-4 ml-4 px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 transition-colors duration-200"
+                >
+                  সেটিংস
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -205,7 +279,20 @@ const App: React.FC = () => {
           <ProfilePage userProgress={userProgress} keymap={keymap} onBackToLobby={handleBackToLobby} />
         )}
 
-        <Controls onVocabUpload={handleVocabUpload} onResetProgress={handleResetProgress} hasVocabulary={masterVocabulary.length > 0} />
+        {gameState === GameState.SETTINGS && userProgress && (
+          <SettingsPage
+            userProgress={userProgress}
+            proficiencyThreshold={proficiencyThreshold}
+            onUpdateProficiencyThreshold={handleUpdateProficiencyThreshold}
+            onToggleKeyLock={handleToggleKeyLock}
+            onBackToLobby={handleBackToLobby}
+            useAllUnlockedKeys={useAllUnlockedKeys}
+            onToggleUseAllUnlockedKeys={handleToggleUseAllUnlockedKeys}
+            onResetProgress={handleResetProgress}
+          />
+        )}
+
+        <Controls onVocabUpload={handleVocabUpload} hasVocabulary={masterVocabulary.length > 0} />
         <Keyboard userProgress={userProgress} keymap={keymap} />
       </main>
     </div>

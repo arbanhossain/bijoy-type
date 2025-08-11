@@ -1,6 +1,7 @@
 
 import { UserProgress, KeyDefinition } from '../types';
 import { keymap, PRACTICE_CHAR_COUNT, LESSON_WORD_COUNT } from '../constants';
+import * as ProgressService from './progressService';
 
 const getCharsFromKeys = (keys: string[]): string[] => {
   const charSet = new Set<string>();
@@ -25,11 +26,25 @@ export const selectPracticeCharacters = (progress: UserProgress): string[] => {
     return profA - profB;
   });
 
-  return sortedChars.slice(0, PRACTICE_CHAR_COUNT);
+  const useAllUnlockedKeys = ProgressService.loadUseAllUnlockedKeys();
+
+  if (useAllUnlockedKeys) {
+    return unlockedChars;
+  } else {
+    return sortedChars.slice(0, PRACTICE_CHAR_COUNT);
+  }
 };
 
 export const generatePracticeText = (progress: UserProgress, vocabulary: string[]): string => {
-  let targetChars = selectPracticeCharacters(progress);
+  const useAllUnlockedKeys = ProgressService.loadUseAllUnlockedKeys();
+  let targetChars: string[];
+
+  if (useAllUnlockedKeys) {
+    targetChars = getCharsFromKeys(progress.unlockedKeys);
+  } else {
+    targetChars = selectPracticeCharacters(progress);
+  }
+  
   let wordPool = filterVocabulary(vocabulary, targetChars);
 
   if (wordPool.length < LESSON_WORD_COUNT) {

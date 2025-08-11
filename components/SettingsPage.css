@@ -1,0 +1,86 @@
+.settings-page {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: Arial, sans-serif;
+}
+
+.settings-page h1 {
+  color: #333;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.settings-card {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.settings-card h2 {
+  color: #555;
+  margin-top: 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.settings-card label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: #666;
+}
+
+.settings-card input[type="range"] {
+  width: calc(100% - 60px); /* Adjust width to make space for percentage */
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+.settings-card span {
+  font-weight: bold;
+  color: #007bff;
+  vertical-align: middle;
+}
+
+.keyboard-layout {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr); /* Adjust based on actual keyboard layout */
+  gap: 5px;
+  margin-top: 20px;
+  justify-items: center;
+}
+
+.keyboard-layout .key {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  text-transform: uppercase; /* For better visual representation of keys */
+}
+
+.keyboard-layout .key:hover {
+  background-color: #d0d0d0;
+  transform: translateY(-1px);
+}
+
+.keyboard-layout .key.locked {
+  background-color: #ff6b6b; /* Red for locked keys */
+  color: white;
+  border-color: #ff4c4c;
+}
+
+.keyboard-layout .key.locked:hover {
+  background-color: #ff4c4c;
+}

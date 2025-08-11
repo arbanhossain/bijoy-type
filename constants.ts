@@ -1,6 +1,5 @@
 import { KeyMap } from './types';
 
-export const PROFICIENCY_THRESHOLD = 0.9;
 export const INITIAL_UNLOCKED_KEYS_COUNT = 5;
 export const PRACTICE_CHAR_COUNT = 6;
 export const LESSON_WORD_COUNT = 15;
