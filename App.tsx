@@ -7,6 +7,7 @@ import TypingArea from './components/TypingArea';
 import Keyboard from './components/Keyboard';
 import Controls from './components/Controls';
 import { keymap, unlockOrder, PROFICIENCY_THRESHOLD } from './constants';
+import ProfilePage from './components/ProfilePage';
 
 const App: React.FC = () => {
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
@@ -15,6 +16,14 @@ const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.LOBBY);
   const [lastUnlocked, setLastUnlocked] = useState<string | null>(null);
   const [liveStats, setLiveStats] = useState({ wpm: 0, accuracy: 100 });
+
+  const handleViewProfile = () => {
+    setGameState(GameState.PROFILE);
+  };
+
+  const handleBackToLobby = () => {
+    setGameState(GameState.LOBBY);
+  };
 
   useEffect(() => {
     setUserProgress(ProgressService.loadProgress());
@@ -144,6 +153,12 @@ const App: React.FC = () => {
                 </button>
               </>
             )}
+            <button
+              onClick={handleViewProfile}
+              className="mt-4 px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75 transition-colors duration-200"
+            >
+              প্রোফাইল দেখুন
+            </button>
           </div>
         )}
         
@@ -177,7 +192,17 @@ const App: React.FC = () => {
             >
               পরবর্তী পাঠ
             </button>
+            <button
+              onClick={handleViewProfile}
+              className="mt-4 ml-4 px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75 transition-colors duration-200"
+            >
+              প্রোফাইল দেখুন
+            </button>
           </div>
+        )}
+
+        {gameState === GameState.PROFILE && userProgress && (
+          <ProfilePage userProgress={userProgress} keymap={keymap} onBackToLobby={handleBackToLobby} />
         )}
 
         <Controls onVocabUpload={handleVocabUpload} onResetProgress={handleResetProgress} hasVocabulary={masterVocabulary.length > 0} />

@@ -28,4 +28,5 @@ export enum GameState {
   LOBBY,
   TYPING,
   FINISHED,
+  PROFILE,
 }
